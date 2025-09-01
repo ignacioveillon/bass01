@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Sawtooth Oscillator with Click-Free Filter Envelope + Rhythm</title>
+  <script src="https://unpkg.com/tone@14.7.77/build/Tone.js"></script>
+  <style>
+    body { font-family: Arial; background: #111; color: #eee; padding: 20px; }
+    button { font-size: 16px; padding: 10px 20px; margin: 10px; cursor: pointer; }
+    .slider-container { margin: 10px 0; }
+    input[type=range] { width: 300px; }
+    .value { display: inline-block; width: 60px; text-align: right; margin-left: 10px; }
+  </style>
+</head>
+<body>
+  <h2>Sawtooth Oscillator with Click-Free Filter Envelope</h2>
+
+  <button id="start">Start Sawtooth</button>
+  <button id="stop">Stop Sawtooth</button>
+  <button id="triggerEnv">Trigger Filter Envelope</button>
+  <br>
+  <button id="startPattern">Start Pattern</button>
+  <button id="stopPattern">Stop Pattern</button>
+
+<div class="slider-container">
+  <label>Attack Time (Ramp to 2000Hz):</label>
+  <input type="range" id="slider1" min="0" max="1" step="0.001" value="0.015">
+  <span class="value" id="slider1Value">0.015</span>
+</div>
+
+<div class="slider-container">
+  <label>Decay Time (Ramp back to ~0):</label>
+  <input type="range" id="slider2" min="0" max="2" step="0.001" value="0.355">
+  <span class="value" id="slider2Value">0.355</span>
+</div>
+
+  <script>
+    function midiToFreq(midiNote) {
+      return 440 * Math.pow(2, (midiNote - 69) / 12);
+    }
+
+    const osc = new Tone.Oscillator(midiToFreq(48), "sawtooth");
+    const filter = new Tone.Filter({ type: "lowpass", frequency: 0, Q: 4 });
+    osc.connect(filter);
+    filter.toDestination();
+
+    let isPlaying = false;
+
+    document.getElementById("start").addEventListener("click", async () => {
+      await Tone.start();
+      if (!isPlaying) {
+        osc.start();
+        isPlaying = true;
+        console.log("Sawtooth started");
+      }
+    });
+
+    document.getElementById("stop").addEventListener("click", () => {
+      if (isPlaying) {
+        osc.stop();
+        isPlaying = false;
+        console.log("Sawtooth stopped");
+      }
+    });
+
+    const slider1 = document.getElementById("slider1");
+    const slider1Value = document.getElementById("slider1Value");
+    const slider2 = document.getElementById("slider2");
+    const slider2Value = document.getElementById("slider2Value");
+
+    slider1.addEventListener("input", () => {
+      slider1Value.textContent = parseFloat(slider1.value).toFixed(3);
+    });
+
+    slider2.addEventListener("input", () => {
+      slider2Value.textContent = parseFloat(slider2.value).toFixed(3);
+    });
+
+function triggerEnvelope(time) {
+  const freq = filter.frequency;
+  const now = time || Tone.now();
+
+  const minFreq = 0.001;
+  const attackTime = parseFloat(slider1.value);
+  const decayTime  = parseFloat(slider2.value);
+
+  // Always read the *current* value, avoid hard reset
+  const startFreq = Math.max(freq.getValueAtTime(now), minFreq);
+
+  // Smooth start
+  freq.setValueAtTime(startFreq, now);
+
+  // Attack (smooth ramp up)
+  freq.exponentialRampToValueAtTime(1000, now + attackTime);
+
+  // Decay (smooth ramp back down, no cancel)
+  freq.setTargetAtTime(minFreq, now + attackTime, decayTime / 3);
+
+  console.log("Smooth envelope retriggered:", attackTime, decayTime);
+}
+
+    document.getElementById("triggerEnv").addEventListener("click", () => {
+      triggerEnvelope();
+    });
+
+// ==============================
+// RHYTHMIC PATTERN (Corrected Galope)
+// ==============================
+Tone.Transport.bpm.value = 140;
+
+// Galope: 8th, quarter, quarter, quarter, 8th
+const pattern = new Tone.Part((time) => {
+  triggerEnvelope(time);
+}, [
+  ["0:0:0", "hit"],  // 8th
+  ["0:0:2", "hit"],  // quarter
+  ["0:1:2", "hit"],  // quarter
+  ["0:2:2", "hit"],  // quarter
+  ["0:3:2", "hit"],  // 8th (corrected)
+]);
+
+pattern.loop = true;
+pattern.loopEnd = "1m"; // loop every measure
+
+
+    document.getElementById("startPattern").addEventListener("click", async () => {
+      await Tone.start();
+      Tone.Transport.start();
+      pattern.start(0);
+      console.log("Pattern started at 140 BPM");
+    });
+
+    document.getElementById("stopPattern").addEventListener("click", () => {
+      pattern.stop();
+      Tone.Transport.stop();
+      console.log("Pattern stopped");
+    });
+  </script>
+</body>
+</html>
