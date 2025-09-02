@@ -9,37 +9,62 @@
     button { font-size: 16px; padding: 10px 20px; margin: 10px; cursor: pointer; }
     .slider-container { margin: 10px 0; }
     input[type=range] { width: 300px; }
-    .value { display: inline-block; width: 60px; text-align: right; margin-left: 10px; }
+    .value { display: inline-block; width: 80px; text-align: right; margin-left: 10px; }
   </style>
 </head>
 <body>
   <h2>Sawtooth Oscillator with Click-Free Filter Envelope</h2>
 
-  <button id="start">Start Sawtooth</button>
-  <button id="stop">Stop Sawtooth</button>
+  <button id="start">Start Oscillator</button>
+  <button id="stop">Stop Oscillator</button>
   <button id="triggerEnv">Trigger Filter Envelope</button>
   <br>
   <button id="startPattern">Start Pattern</button>
   <button id="stopPattern">Stop Pattern</button>
+  <br>
+  <!-- Waveform buttons -->
+  <button id="waveSaw">Sawtooth Wave</button>
+  <button id="waveSquare">Square Wave</button>
+  <br>
+  <!-- Pitch buttons -->
+  <button id="noteC1">C1</button>
+  <button id="noteC2">C2</button>
 
-<div class="slider-container">
-  <label>Attack Time (Ramp to 2000Hz):</label>
-  <input type="range" id="slider1" min="0" max="1" step="0.001" value="0.015">
-  <span class="value" id="slider1Value">0.015</span>
-</div>
+  <!-- Attack slider -->
+  <div class="slider-container">
+    <label>Attack Time (Ramp up):</label>
+    <input type="range" id="slider1" min="0" max="1" step="0.001" value="0.015">
+    <span class="value" id="slider1Value">0.015</span>
+  </div>
 
-<div class="slider-container">
-  <label>Decay Time (Ramp back to ~0):</label>
-  <input type="range" id="slider2" min="0" max="2" step="0.001" value="0.355">
-  <span class="value" id="slider2Value">0.355</span>
-</div>
+  <!-- Decay slider -->
+  <div class="slider-container">
+    <label>Decay Time (Ramp back):</label>
+    <input type="range" id="slider2" min="0" max="2" step="0.001" value="0.355">
+    <span class="value" id="slider2Value">0.355</span>
+  </div>
+
+  <!-- Target cutoff frequency slider -->
+  <div class="slider-container">
+    <label>Target Cutoff Frequency (Hz):</label>
+    <input type="range" id="sliderCutoff" min="100" max="10000" step="1" value="1000">
+    <span class="value" id="sliderCutoffValue">1000</span>
+  </div>
+
+  <!-- Resonance (Q) slider -->
+  <div class="slider-container">
+    <label>Filter Resonance (Q):</label>
+    <input type="range" id="sliderResonance" min="0.1" max="20" step="0.1" value="4">
+    <span class="value" id="sliderResonanceValue">4.0</span>
+  </div>
 
   <script>
     function midiToFreq(midiNote) {
       return 440 * Math.pow(2, (midiNote - 69) / 12);
     }
 
-    const osc = new Tone.Oscillator(midiToFreq(48), "sawtooth");
+    // Default: C2 (MIDI 36)
+    const osc = new Tone.Oscillator(midiToFreq(36), "sawtooth"); 
     const filter = new Tone.Filter({ type: "lowpass", frequency: 0, Q: 4 });
     osc.connect(filter);
     filter.toDestination();
@@ -51,7 +76,7 @@
       if (!isPlaying) {
         osc.start();
         isPlaying = true;
-        console.log("Sawtooth started");
+        console.log("Oscillator started (" + osc.type + ", " + osc.frequency.value.toFixed(2) + " Hz)");
       }
     });
 
@@ -59,14 +84,41 @@
       if (isPlaying) {
         osc.stop();
         isPlaying = false;
-        console.log("Sawtooth stopped");
+        console.log("Oscillator stopped");
       }
     });
 
+    // === Waveform switch buttons ===
+    document.getElementById("waveSaw").addEventListener("click", () => {
+      osc.type = "sawtooth";
+      console.log("Waveform set to Sawtooth");
+    });
+
+    document.getElementById("waveSquare").addEventListener("click", () => {
+      osc.type = "square";
+      console.log("Waveform set to Square");
+    });
+
+    // === Pitch buttons ===
+    document.getElementById("noteC1").addEventListener("click", () => {
+      osc.frequency.value = midiToFreq(24); // C1
+      console.log("Pitch set to C1 (" + osc.frequency.value.toFixed(2) + " Hz)");
+    });
+
+    document.getElementById("noteC2").addEventListener("click", () => {
+      osc.frequency.value = midiToFreq(36); // C2
+      console.log("Pitch set to C2 (" + osc.frequency.value.toFixed(2) + " Hz)");
+    });
+
+    // === Sliders ===
     const slider1 = document.getElementById("slider1");
     const slider1Value = document.getElementById("slider1Value");
     const slider2 = document.getElementById("slider2");
     const slider2Value = document.getElementById("slider2Value");
+    const sliderCutoff = document.getElementById("sliderCutoff");
+    const sliderCutoffValue = document.getElementById("sliderCutoffValue");
+    const sliderResonance = document.getElementById("sliderResonance");
+    const sliderResonanceValue = document.getElementById("sliderResonanceValue");
 
     slider1.addEventListener("input", () => {
       slider1Value.textContent = parseFloat(slider1.value).toFixed(3);
@@ -76,52 +128,54 @@
       slider2Value.textContent = parseFloat(slider2.value).toFixed(3);
     });
 
-function triggerEnvelope(time) {
-  const freq = filter.frequency;
-  const now = time || Tone.now();
+    sliderCutoff.addEventListener("input", () => {
+      sliderCutoffValue.textContent = parseInt(sliderCutoff.value);
+    });
 
-  const minFreq = 0.001;
-  const attackTime = parseFloat(slider1.value);
-  const decayTime  = parseFloat(slider2.value);
+    sliderResonance.addEventListener("input", () => {
+      const qValue = parseFloat(sliderResonance.value);
+      filter.Q.value = qValue;
+      sliderResonanceValue.textContent = qValue.toFixed(1);
+    });
 
-  // Always read the *current* value, avoid hard reset
-  const startFreq = Math.max(freq.getValueAtTime(now), minFreq);
+    // === Envelope ===
+    function triggerEnvelope(time) {
+      const freq = filter.frequency;
+      const now = time || Tone.now();
 
-  // Smooth start
-  freq.setValueAtTime(startFreq, now);
+      const minFreq = 0.001;
+      const attackTime = parseFloat(slider1.value);
+      const decayTime  = parseFloat(slider2.value);
+      const targetFreq = parseFloat(sliderCutoff.value);
 
-  // Attack (smooth ramp up)
-  freq.exponentialRampToValueAtTime(1000, now + attackTime);
+      const startFreq = Math.max(freq.getValueAtTime(now), minFreq);
 
-  // Decay (smooth ramp back down, no cancel)
-  freq.setTargetAtTime(minFreq, now + attackTime, decayTime / 3);
+      freq.setValueAtTime(startFreq, now);
+      freq.exponentialRampToValueAtTime(targetFreq, now + attackTime);
+      freq.setTargetAtTime(minFreq, now + attackTime, decayTime / 3);
 
-  console.log("Smooth envelope retriggered:", attackTime, decayTime);
-}
+      console.log(`Envelope retriggered: attack=${attackTime}, decay=${decayTime}, target=${targetFreq} Hz, Q=${filter.Q.value}`);
+    }
 
     document.getElementById("triggerEnv").addEventListener("click", () => {
       triggerEnvelope();
     });
 
-// ==============================
-// RHYTHMIC PATTERN (Corrected Galope)
-// ==============================
-Tone.Transport.bpm.value = 140;
+    // === Rhythmic Pattern ===
+    Tone.Transport.bpm.value = 140;
 
-// Galope: 8th, quarter, quarter, quarter, 8th
-const pattern = new Tone.Part((time) => {
-  triggerEnvelope(time);
-}, [
-  ["0:0:0", "hit"],  // 8th
-  ["0:0:2", "hit"],  // quarter
-  ["0:1:2", "hit"],  // quarter
-  ["0:2:2", "hit"],  // quarter
-  ["0:3:2", "hit"],  // 8th (corrected)
-]);
+    const pattern = new Tone.Part((time) => {
+      triggerEnvelope(time);
+    }, [
+      ["0:0:0", "hit"],  
+      ["0:0:2", "hit"],  
+      ["0:1:2", "hit"],  
+      ["0:2:2", "hit"],  
+      ["0:3:2", "hit"],  
+    ]);
 
-pattern.loop = true;
-pattern.loopEnd = "1m"; // loop every measure
-
+    pattern.loop = true;
+    pattern.loopEnd = "1m"; 
 
     document.getElementById("startPattern").addEventListener("click", async () => {
       await Tone.start();
