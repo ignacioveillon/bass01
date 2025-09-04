@@ -1,74 +1,95 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Oscillator with Filter Envelope, Resonance, Distortion & Compressor</title>
+  <meta charset="UTF-8" />
+  <title>Oscillator with Filter Envelope, Distortion, Compressor, Reverb & Meter</title>
   <script src="https://unpkg.com/tone@14.7.77/build/Tone.js"></script>
   <style>
-    body { font-family: Arial; background: #111; color: #eee; padding: 20px; }
-    button { font-size: 16px; padding: 10px 20px; margin: 10px; cursor: pointer; }
-    .slider-container { margin: 10px 0; }
-    input[type=range] { width: 300px; }
-    .value { display: inline-block; width: 80px; text-align: right; margin-left: 10px; }
-    select { font-size: 16px; padding: 5px; margin-left: 10px; }
+    body { font-family: Arial, Helvetica, sans-serif; background:#111; color:#eee; padding:20px; }
+    h2, h3 { margin: 16px 0 8px; }
+    button { font-size:16px; padding:10px 16px; margin:6px; cursor:pointer; border:0; border-radius:8px; background:#2a2a2a; color:#eee; }
+    button:hover { background:#3a3a3a; }
+    .slider-container { margin:10px 0; display:flex; align-items:center; gap:10px; }
+    .slider-container label { width:220px; opacity:0.9; }
+    input[type=range] { width:300px; }
+    .value { display:inline-block; width:80px; text-align:right; opacity:0.8; }
+    select { font-size:16px; padding:5px; margin-left:10px; }
+
+    /* Meter */
+    #meterWrap { display:flex; align-items:center; gap:10px; }
+    #meterCanvas {
+      width: 320px; height: 28px; background:#222; border-radius:6px; border:1px solid #444; display:block;
+    }
+    #meterLabel { width: 70px; opacity:0.8; text-align:right; }
   </style>
 </head>
 <body>
-  <h2>Oscillator with Filter Envelope, Resonance, Distortion & Compressor</h2>
+  <h2>Oscillator with Filter Envelope, Resonance, Distortion, Compressor, Reverb & Output Meter</h2>
 
-  <button id="start">Start Oscillator</button>
-  <button id="stop">Stop Oscillator</button>
-  <button id="triggerEnv">Trigger Filter Envelope</button>
-  <br>
-  <button id="startPattern">Start Pattern</button>
-  <button id="stopPattern">Stop Pattern</button>
-  <br>
-  <!-- Waveform buttons -->
-  <button id="waveSaw">Sawtooth Wave</button>
-  <button id="waveSquare">Square Wave</button>
-  <button id="waveSine">Sine Wave</button>
-  <br>
-  <!-- Pitch buttons -->
-  <button id="noteC1">C1</button>
-  <button id="noteC2">C2</button>
+  <!-- Transport / Envelope triggers -->
+  <div>
+    <button id="start">Start Oscillator</button>
+    <button id="stop">Stop Oscillator</button>
+    <button id="triggerEnv">Trigger Filter Envelope</button>
+  </div>
 
-  <!-- Attack slider -->
+  <!-- Pattern -->
+  <div>
+    <button id="startPattern">Start Pattern</button>
+    <button id="stopPattern">Stop Pattern</button>
+  </div>
+
+  <!-- Waveform -->
+  <div>
+    <button id="waveSaw">Sawtooth Wave</button>
+    <button id="waveSquare">Square Wave</button>
+    <button id="waveSine">Sine Wave</button>
+  </div>
+
+  <!-- Pitch -->
+  <div>
+    <button id="noteC1">C1</button>
+    <button id="noteC2">C2</button>
+  </div>
+
+  <!-- Attack -->
   <div class="slider-container">
-    <label>Attack Time (Ramp up):</label>
-    <input type="range" id="slider1" min="0" max="0.5" step="0.001" value="0.015">
+    <label for="slider1">Attack Time (Ramp up):</label>
+    <input type="range" id="slider1" min="0" max="0.5" step="0.001" value="0.015" />
     <span class="value" id="slider1Value">0.015</span>
   </div>
 
-  <!-- Decay slider -->
+  <!-- Decay -->
   <div class="slider-container">
-    <label>Decay Time (Ramp back):</label>
-    <input type="range" id="slider2" min="0" max="1" step="0.001" value="0.355">
+    <label for="slider2">Decay Time (Ramp back):</label>
+    <input type="range" id="slider2" min="0" max="1" step="0.001" value="0.355" />
     <span class="value" id="slider2Value">0.355</span>
   </div>
 
-  <!-- Target cutoff frequency slider -->
+  <!-- Target cutoff -->
   <div class="slider-container">
-    <label>Target Cutoff Frequency (Hz):</label>
-    <input type="range" id="sliderCutoff" min="100" max="10000" step="1" value="1000">
+    <label for="sliderCutoff">Target Cutoff Frequency (Hz):</label>
+    <input type="range" id="sliderCutoff" min="100" max="10000" step="1" value="1000" />
     <span class="value" id="sliderCutoffValue">1000</span>
   </div>
 
-  <!-- Resonance (Q) slider -->
+  <!-- Resonance -->
   <div class="slider-container">
-    <label>Filter Resonance (Q):</label>
-    <input type="range" id="sliderResonance" min="0" max="10" step="0.1" value="4">
+    <label for="sliderResonance">Filter Resonance (Q):</label>
+    <input type="range" id="sliderResonance" min="0" max="10" step="0.1" value="4" />
     <span class="value" id="sliderResonanceValue">4.0</span>
   </div>
 
-  <!-- Distortion sliders -->
+  <!-- Distortion amount -->
   <div class="slider-container">
-    <label>Distortion Amount:</label>
-    <input type="range" id="sliderDist" min="0" max="1" step="0.01" value="0.4">
+    <label for="sliderDist">Distortion Amount:</label>
+    <input type="range" id="sliderDist" min="0" max="1" step="0.01" value="0.4" />
     <span class="value" id="sliderDistValue">0.40</span>
   </div>
 
+  <!-- Oversampling -->
   <div class="slider-container">
-    <label>Oversampling:</label>
+    <label for="oversampleSelect">Oversampling:</label>
     <select id="oversampleSelect">
       <option value="none">None</option>
       <option value="2x">2x</option>
@@ -76,85 +97,147 @@
     </select>
   </div>
 
-  <!-- Amplitude slider -->
+  <!-- Amplitude -->
   <div class="slider-container">
-    <label>Amplitude:</label>
-    <input type="range" id="sliderAmp" min="0" max="1" step="0.01" value="0.5">
+    <label for="sliderAmp">Amplitude:</label>
+    <input type="range" id="sliderAmp" min="0" max="1" step="0.01" value="0.5" />
     <span class="value" id="sliderAmpValue">0.50</span>
   </div>
 
-  <!-- === Compressor Sliders === -->
+  <!-- Compressor controls -->
   <h3>Compressor Controls</h3>
   <div class="slider-container">
-    <label>Threshold (dB):</label>
-    <input type="range" id="compThreshold" min="-60" max="0" step="1" value="-28">
+    <label for="compThreshold">Threshold (dB):</label>
+    <input type="range" id="compThreshold" min="-60" max="0" step="1" value="-28" />
     <span class="value" id="compThresholdValue">-28</span>
   </div>
 
   <div class="slider-container">
-    <label>Ratio:</label>
-    <input type="range" id="compRatio" min="1" max="20" step="0.1" value="4">
+    <label for="compRatio">Ratio:</label>
+    <input type="range" id="compRatio" min="1" max="20" step="0.1" value="4" />
     <span class="value" id="compRatioValue">4.0</span>
   </div>
 
   <div class="slider-container">
-    <label>Attack (s):</label>
-    <input type="range" id="compAttack" min="0" max="1" step="0.01" value="0.03">
+    <label for="compAttack">Attack (s):</label>
+    <input type="range" id="compAttack" min="0" max="1" step="0.01" value="0.03" />
     <span class="value" id="compAttackValue">0.03</span>
   </div>
 
   <div class="slider-container">
-    <label>Release (s):</label>
-    <input type="range" id="compRelease" min="0" max="1" step="0.01" value="0.12">
+    <label for="compRelease">Release (s):</label>
+    <input type="range" id="compRelease" min="0" max="1" step="0.01" value="0.12" />
     <span class="value" id="compReleaseValue">0.12</span>
   </div>
 
   <div class="slider-container">
-    <label>Knee (dB):</label>
-    <input type="range" id="compKnee" min="0" max="40" step="1" value="6">
+    <label for="compKnee">Knee (dB):</label>
+    <input type="range" id="compKnee" min="0" max="40" step="1" value="6" />
     <span class="value" id="compKneeValue">6</span>
   </div>
 
-  <!-- Compressor Mute/Unmute buttons -->
+  <!-- Compressor Mute/Unmute -->
   <div class="slider-container">
     <button id="muteComp">Mute Compressor</button>
     <button id="unmuteComp">Unmute Compressor</button>
   </div>
 
+  <!-- Reverb controls -->
+  <h3>Reverb Controls</h3>
+  <div class="slider-container">
+    <label for="reverbDecay">Decay (s):</label>
+    <input type="range" id="reverbDecay" min="0.1" max="10" step="0.1" value="2" />
+    <span class="value" id="reverbDecayValue">2.0</span>
+  </div>
+
+  <div class="slider-container">
+    <label for="reverbPreDelay">Pre-Delay (s):</label>
+    <input type="range" id="reverbPreDelay" min="0" max="1" step="0.01" value="0.01" />
+    <span class="value" id="reverbPreDelayValue">0.01</span>
+  </div>
+
+  <div class="slider-container">
+    <label for="reverbWet">Wet:</label>
+    <input type="range" id="reverbWet" min="0" max="1" step="0.01" value="0.3" />
+    <span class="value" id="reverbWetValue">0.30</span>
+  </div>
+
+  <div class="slider-container">
+    <button id="bypassReverb">Bypass Reverb</button>
+    <button id="enableReverb">Enable Reverb</button>
+  </div>
+
+  <!-- Output Meter -->
+  <h3>Output Volume Meter</h3>
+  <div id="meterWrap">
+    <canvas id="meterCanvas" width="320" height="28"></canvas>
+    <div id="meterLabel">after FX</div>
+  </div>
+
   <script>
-    function midiToFreq(midiNote) {
-      return 440 * Math.pow(2, (midiNote - 69) / 12);
-    }
+    // --- Utils ---
+    function midiToFreq(midiNote) { return 440 * Math.pow(2, (midiNote - 69) / 12); }
 
     // === Oscillator & Filter Setup ===
-    const osc = new Tone.Oscillator(midiToFreq(36), "sawtooth"); 
-    const amp = new Tone.Gain(0.5); 
+    const osc = new Tone.Oscillator(midiToFreq(36), "sawtooth");
+    const amp = new Tone.Gain(0.5);
     const filter = new Tone.Filter({ type: "lowpass", frequency: 0, Q: 4 });
 
     // === Distortion ===
-    const distortion = new Tone.Distortion({
-      distortion: 0.4,
-      oversample: "4x"
-    });
+    const distortion = new Tone.Distortion({ distortion: 0.4, oversample: "4x" });
 
     // === Compressor ===
     const bassComp = new Tone.Compressor({
-      threshold: -28,
-      ratio: 4,
-      attack: 0.03,
-      release: 0.12,
-      knee: 6
+      threshold: -28, ratio: 4, attack: 0.03, release: 0.12, knee: 6
     });
 
-    // Routing: Osc → Amp → Filter → Distortion → Compressor → Speakers
+    // === Reverb ===
+    const reverb = new Tone.Reverb({ decay: 2, preDelay: 0.01, wet: 0.3 });
+
+    // === Meter (level in dB) ===
+    const meter = new Tone.Meter({ channels: 1 });
+
+    // === Upstream fixed routing ===
     osc.connect(amp);
     amp.connect(filter);
     filter.connect(distortion);
-    distortion.connect(bassComp);
-    bassComp.toDestination();
 
+    // Flags
     let isPlaying = false;
     let isCompMuted = false;
+    let isReverbBypassed = false;
+
+    // Centralized routing based on flags
+    function updateRouting() {
+      // Clean downstream connections to avoid duplicates
+      distortion.disconnect();
+      bassComp.disconnect();
+      reverb.disconnect();
+
+      // If compressor is active, route distortion -> compressor
+      // else skip it
+      let upstreamNode;
+      if (isCompMuted) {
+        upstreamNode = distortion;
+      } else {
+        distortion.connect(bassComp);
+        upstreamNode = bassComp;
+      }
+
+      // Reverb on/off
+      if (isReverbBypassed) {
+        // Direct to destination & meter
+        upstreamNode.connect(Tone.Destination);
+        upstreamNode.connect(meter);
+      } else {
+        upstreamNode.connect(reverb);
+        reverb.connect(Tone.Destination);
+        reverb.connect(meter);
+      }
+    }
+
+    // Initial routing
+    updateRouting();
 
     // === Start/Stop Oscillator ===
     document.getElementById("start").addEventListener("click", async () => {
@@ -203,15 +286,11 @@
       distortion.distortion = parseFloat(sliderDist.value);
       sliderDistValue.textContent = parseFloat(sliderDist.value).toFixed(2);
     });
-
-    oversampleSelect.addEventListener("change", () => {
-      distortion.oversample = oversampleSelect.value;
-    });
+    oversampleSelect.addEventListener("change", () => { distortion.oversample = oversampleSelect.value; });
 
     // === Amplitude ===
     const sliderAmp = document.getElementById("sliderAmp");
     const sliderAmpValue = document.getElementById("sliderAmpValue");
-
     sliderAmp.addEventListener("input", () => {
       amp.gain.value = parseFloat(sliderAmp.value);
       sliderAmpValue.textContent = parseFloat(sliderAmp.value).toFixed(2);
@@ -222,12 +301,148 @@
       bassComp.threshold.value = parseFloat(e.target.value);
       document.getElementById("compThresholdValue").textContent = e.target.value;
     });
-
     document.getElementById("compRatio").addEventListener("input", (e) => {
       bassComp.ratio.value = parseFloat(e.target.value);
       document.getElementById("compRatioValue").textContent = e.target.value;
     });
-
     document.getElementById("compAttack").addEventListener("input", (e) => {
       bassComp.attack = parseFloat(e.target.value);
       document.getElementById("compAttackValue").textContent = e.target.value;
+    });
+    document.getElementById("compRelease").addEventListener("input", (e) => {
+      bassComp.release = parseFloat(e.target.value);
+      document.getElementById("compReleaseValue").textContent = e.target.value;
+    });
+    document.getElementById("compKnee").addEventListener("input", (e) => {
+      bassComp.knee.value = parseFloat(e.target.value);
+      document.getElementById("compKneeValue").textContent = e.target.value;
+    });
+
+    // === Compressor Mute/Unmute Buttons ===
+    document.getElementById("muteComp").addEventListener("click", () => {
+      if (!isCompMuted) { isCompMuted = true; updateRouting(); }
+    });
+    document.getElementById("unmuteComp").addEventListener("click", () => {
+      if (isCompMuted) { isCompMuted = false; updateRouting(); }
+    });
+
+    // === Reverb Controls ===
+    const reverbDecay = document.getElementById("reverbDecay");
+    const reverbDecayValue = document.getElementById("reverbDecayValue");
+    const reverbPreDelay = document.getElementById("reverbPreDelay");
+    const reverbPreDelayValue = document.getElementById("reverbPreDelayValue");
+    const reverbWet = document.getElementById("reverbWet");
+    const reverbWetValue = document.getElementById("reverbWetValue");
+
+    // Debounce IR generation to avoid spamming
+    let regenTO = null;
+    function scheduleReverbGenerate() {
+      if (regenTO) clearTimeout(regenTO);
+      regenTO = setTimeout(() => { reverb.generate(); }, 150);
+    }
+
+    reverbDecay.addEventListener("input", () => {
+      reverb.decay = parseFloat(reverbDecay.value);
+      reverbDecayValue.textContent = reverbDecay.value;
+      scheduleReverbGenerate();
+    });
+    reverbPreDelay.addEventListener("input", () => {
+      reverb.preDelay = parseFloat(reverbPreDelay.value);
+      reverbPreDelayValue.textContent = reverbPreDelay.value;
+      scheduleReverbGenerate();
+    });
+    reverbWet.addEventListener("input", () => {
+      reverb.wet.value = parseFloat(reverbWet.value);
+      reverbWetValue.textContent = parseFloat(reverbWet.value).toFixed(2);
+    });
+
+    // === Reverb Bypass/Enable ===
+    document.getElementById("bypassReverb").addEventListener("click", () => {
+      if (!isReverbBypassed) { isReverbBypassed = true; updateRouting(); }
+    });
+    document.getElementById("enableReverb").addEventListener("click", () => {
+      if (isReverbBypassed) { isReverbBypassed = false; updateRouting(); }
+    });
+
+    // === Filter Envelope Trigger ===
+    function triggerEnvelope(time) {
+      const freq = filter.frequency;
+      const now = time || Tone.now();
+      const minFreq = 0.001;
+      const attackTime = parseFloat(slider1.value);
+      const decayTime  = parseFloat(slider2.value);
+      const targetFreq = parseFloat(sliderCutoff.value);
+      const startFreq = Math.max(freq.getValueAtTime(now), minFreq);
+      freq.setValueAtTime(startFreq, now);
+      freq.exponentialRampToValueAtTime(targetFreq, now + attackTime);
+      freq.setTargetAtTime(minFreq, now + attackTime, decayTime / 3);
+    }
+    document.getElementById("triggerEnv").addEventListener("click", () => { triggerEnvelope(); });
+
+    // === Rhythmic Pattern ===
+    Tone.Transport.bpm.value = 140;
+    const pattern = new Tone.Part((time) => { triggerEnvelope(time); }, [
+      ["0:0:0", "hit"], ["0:0:2", "hit"], ["0:1:2", "hit"], ["0:2:2", "hit"], ["0:3:2", "hit"]
+    ]);
+    pattern.loop = true;
+    pattern.loopEnd = "1m";
+
+    document.getElementById("startPattern").addEventListener("click", async () => {
+      await Tone.start();
+      Tone.Transport.start();
+      pattern.start(0);
+    });
+    document.getElementById("stopPattern").addEventListener("click", () => {
+      pattern.stop();
+      Tone.Transport.stop();
+    });
+
+    // === Output Meter (multi-level with peak hold LED) ===
+    const meterCanvas = document.getElementById("meterCanvas");
+    const meterCtx = meterCanvas.getContext("2d");
+    let peakHold = false;
+    let peakTO = null;
+
+    function drawMeter() {
+      requestAnimationFrame(drawMeter);
+      const level = meter.getValue(); // in dB, -Infinity..0
+      // normalize -60..0 dB to 0..1
+      const norm = Math.max(0, Math.min(1, (level + 60) / 60));
+
+      // background
+      meterCtx.clearRect(0, 0, meterCanvas.width, meterCanvas.height);
+      meterCtx.fillStyle = "#222";
+      meterCtx.fillRect(0, 0, meterCanvas.width, meterCanvas.height);
+
+      // bar color by level
+      let barColor = "#0f0";         // green
+      if (level > -12 && level <= -3) barColor = "#ff0";  // yellow
+      if (level > -3) barColor = "#f00";                  // red
+
+      const barW = norm * meterCanvas.width;
+      meterCtx.fillStyle = barColor;
+      meterCtx.fillRect(0, 0, barW, meterCanvas.height);
+
+      // peak detection near 0 dB
+      if (level > -3) {
+        peakHold = true;
+        if (peakTO) clearTimeout(peakTO);
+        peakTO = setTimeout(() => { peakHold = false; }, 500);
+      }
+
+      // LED on the right
+      meterCtx.beginPath();
+      meterCtx.arc(meterCanvas.width - 10, meterCanvas.height / 2, 6, 0, Math.PI * 2);
+      if (peakHold) {
+        meterCtx.fillStyle = "#f00";
+      } else if (level > -12) {
+        meterCtx.fillStyle = "#ff0";
+      } else {
+        meterCtx.fillStyle = "#0f0";
+      }
+      meterCtx.fill();
+    }
+    drawMeter();
+  </script>
+</body>
+</html>
