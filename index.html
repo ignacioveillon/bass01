@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Oscillator with Filter Envelope, Distortion, Compressor, Reverb & Meter</title>
+  <title>Oscillator with Filter Envelope, Distortion, Compressor, EQ, Reverb & Meter</title>
   <script src="https://unpkg.com/tone@14.7.77/build/Tone.js"></script>
   <style>
     body { font-family: Arial, Helvetica, sans-serif; background:#111; color:#eee; padding:20px; }
@@ -24,7 +24,7 @@
   </style>
 </head>
 <body>
-  <h2>Oscillator with Filter Envelope, Resonance, Distortion, Compressor, Reverb & Output Meter</h2>
+  <h2>Oscillator with Filter Envelope, Distortion, Compressor, EQ, Reverb & Output Meter</h2>
 
   <!-- Transport / Envelope triggers -->
   <div>
@@ -142,6 +142,24 @@
     <button id="unmuteComp">Unmute Compressor</button>
   </div>
 
+  <!-- EQ3 Controls -->
+  <h3>EQ3 Controls</h3>
+  <div class="slider-container">
+    <label for="eqLow">Low Gain (dB):</label>
+    <input type="range" id="eqLow" min="-24" max="24" step="0.1" value="0" />
+    <span class="value" id="eqLowValue">0.0</span>
+  </div>
+  <div class="slider-container">
+    <label for="eqMid">Mid Gain (dB):</label>
+    <input type="range" id="eqMid" min="-24" max="24" step="0.1" value="0" />
+    <span class="value" id="eqMidValue">0.0</span>
+  </div>
+  <div class="slider-container">
+    <label for="eqHigh">High Gain (dB):</label>
+    <input type="range" id="eqHigh" min="-24" max="24" step="0.1" value="0" />
+    <span class="value" id="eqHighValue">0.0</span>
+  </div>
+
   <!-- Reverb controls -->
   <h3>Reverb Controls</h3>
   <div class="slider-container">
@@ -191,10 +209,13 @@
       threshold: -28, ratio: 4, attack: 0.03, release: 0.12, knee: 6
     });
 
+    // === EQ3 ===
+    const eq = new Tone.EQ3(0, 0, 0); // low, mid, high in dB
+
     // === Reverb ===
     const reverb = new Tone.Reverb({ decay: 2, preDelay: 0.01, wet: 0.3 });
 
-    // === Meter (level in dB) ===
+    // === Meter ===
     const meter = new Tone.Meter({ channels: 1 });
 
     // === Upstream fixed routing ===
@@ -202,41 +223,32 @@
     amp.connect(filter);
     filter.connect(distortion);
 
-    // Flags
     let isPlaying = false;
     let isCompMuted = false;
     let isReverbBypassed = false;
 
-    // Centralized routing based on flags
     function updateRouting() {
-      // Clean downstream connections to avoid duplicates
       distortion.disconnect();
       bassComp.disconnect();
+      eq.disconnect();
       reverb.disconnect();
 
-      // If compressor is active, route distortion -> compressor
-      // else skip it
       let upstreamNode;
-      if (isCompMuted) {
-        upstreamNode = distortion;
-      } else {
-        distortion.connect(bassComp);
-        upstreamNode = bassComp;
-      }
+      if (isCompMuted) upstreamNode = distortion;
+      else { distortion.connect(bassComp); upstreamNode = bassComp; }
 
-      // Reverb on/off
+      upstreamNode.connect(eq);
+
       if (isReverbBypassed) {
-        // Direct to destination & meter
-        upstreamNode.connect(Tone.Destination);
-        upstreamNode.connect(meter);
+        eq.connect(Tone.Destination);
+        eq.connect(meter);
       } else {
-        upstreamNode.connect(reverb);
+        eq.connect(reverb);
         reverb.connect(Tone.Destination);
         reverb.connect(meter);
       }
     }
 
-    // Initial routing
     updateRouting();
 
     // === Start/Stop Oscillator ===
@@ -326,6 +338,18 @@
       if (isCompMuted) { isCompMuted = false; updateRouting(); }
     });
 
+    // === EQ3 Sliders ===
+    const eqLow = document.getElementById("eqLow");
+    const eqMid = document.getElementById("eqMid");
+    const eqHigh = document.getElementById("eqHigh");
+    const eqLowValue = document.getElementById("eqLowValue");
+    const eqMidValue = document.getElementById("eqMidValue");
+    const eqHighValue = document.getElementById("eqHighValue");
+
+    eqLow.addEventListener("input", () => { eq.low.value = parseFloat(eqLow.value); eqLowValue.textContent = parseFloat(eqLow.value).toFixed(1); });
+    eqMid.addEventListener("input", () => { eq.mid.value = parseFloat(eqMid.value); eqMidValue.textContent = parseFloat(eqMid.value).toFixed(1); });
+    eqHigh.addEventListener("input", () => { eq.high.value = parseFloat(eqHigh.value); eqHighValue.textContent = parseFloat(eqHigh.value).toFixed(1); });
+
     // === Reverb Controls ===
     const reverbDecay = document.getElementById("reverbDecay");
     const reverbDecayValue = document.getElementById("reverbDecayValue");
@@ -334,7 +358,6 @@
     const reverbWet = document.getElementById("reverbWet");
     const reverbWetValue = document.getElementById("reverbWetValue");
 
-    // Debounce IR generation to avoid spamming
     let regenTO = null;
     function scheduleReverbGenerate() {
       if (regenTO) clearTimeout(regenTO);
@@ -397,7 +420,7 @@
       Tone.Transport.stop();
     });
 
-    // === Output Meter (multi-level with peak hold LED) ===
+    // === Output Meter ===
     const meterCanvas = document.getElementById("meterCanvas");
     const meterCtx = meterCanvas.getContext("2d");
     let peakHold = false;
@@ -405,41 +428,29 @@
 
     function drawMeter() {
       requestAnimationFrame(drawMeter);
-      const level = meter.getValue(); // in dB, -Infinity..0
-      // normalize -60..0 dB to 0..1
+      const level = meter.getValue();
       const norm = Math.max(0, Math.min(1, (level + 60) / 60));
-
-      // background
       meterCtx.clearRect(0, 0, meterCanvas.width, meterCanvas.height);
       meterCtx.fillStyle = "#222";
       meterCtx.fillRect(0, 0, meterCanvas.width, meterCanvas.height);
 
-      // bar color by level
-      let barColor = "#0f0";         // green
-      if (level > -12 && level <= -3) barColor = "#ff0";  // yellow
-      if (level > -3) barColor = "#f00";                  // red
+      let barColor = "#0f0";
+      if (level > -12 && level <= -3) barColor = "#ff0";
+      if (level > -3) barColor = "#f00";
 
       const barW = norm * meterCanvas.width;
       meterCtx.fillStyle = barColor;
       meterCtx.fillRect(0, 0, barW, meterCanvas.height);
 
-      // peak detection near 0 dB
       if (level > -3) {
         peakHold = true;
         if (peakTO) clearTimeout(peakTO);
         peakTO = setTimeout(() => { peakHold = false; }, 500);
       }
 
-      // LED on the right
       meterCtx.beginPath();
       meterCtx.arc(meterCanvas.width - 10, meterCanvas.height / 2, 6, 0, Math.PI * 2);
-      if (peakHold) {
-        meterCtx.fillStyle = "#f00";
-      } else if (level > -12) {
-        meterCtx.fillStyle = "#ff0";
-      } else {
-        meterCtx.fillStyle = "#0f0";
-      }
+      meterCtx.fillStyle = peakHold ? "#f00" : (level > -12 ? "#ff0" : "#0f0");
       meterCtx.fill();
     }
     drawMeter();
